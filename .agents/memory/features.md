@@ -1,6 +1,6 @@
 # Features - SDD index | delete when complete | new ID = last_id + 1
 
-last_id: 37
+last_id: 42
 
 <!--
 One line per feature. Planned features may be registered here without a spec yet (status: pending); a spec is opened when the feature is planned and ready to develop. When a feature is COMPLETE: remove its line here and mark the spec status as completed. SPECS ARE NEVER DELETED - specs/ is a permanent registry, the numbering exists for that. Never reuse an ID; last_id only grows.
@@ -27,4 +27,9 @@ Format: #<id> <name> - <one-line summary> [spec: <file>] [status: pending|active
 #23 Credential rotation reminder - recordatorio de rotacion de credenciales (counts.stale_days sin consumidor; spec 012) [status: pending]
 #27 Notificaciones y recordatorios - switch de aviso con unidad (segundos/minutos/horas/dias) y cantidad, mas la variante de hora previa al inicio; requiere el sistema de notificaciones [status: pending]
 #34 Finances multi-entrada - registrar varios movimientos en una operacion (cola FIFO u optimistic locking con version) [status: pending]
-#36 Assets and instruments - acciones, criptomonedas y metales (oro como bien economico): tenencias con cantidad, valuacion y tracker/telemetria de precio, con su propia mecanica y no como saldo nominal [status: pending]
+#36 Holdings core - nucleo compartido de los activos: tenencia (instrumento, cantidad, costo de adquisicion, fecha) y valuacion contra el ultimo precio conocido, con serie historica propia; metales, acciones y cripto son tipos sobre este nucleo [status: pending]
+#38 Metals - metales como bien economico (oro, plata): cantidad en gramos con pureza (ej. 10 g de oro 24 qt) y precio por metal; no es un saldo nominal [status: pending]
+#39 Stocks - acciones: ticker, mercado y cantidad, con precio de mercado y eventos societarios a definir (dividendos, splits) [status: pending]
+#40 Crypto - criptomonedas: unidad y red, cantidad y precio de mercado; la red define decimales y direcciones [status: pending]
+#41 Price feeds - proveedores de precios por tipo de instrumento (metales, acciones, cripto) con sync programado y serie historica, mismo patron que rates: el core los consume por HTTP desde integrations/, nunca importa su codigo [status: pending]
+#42 Rates sources expansion - fuentes de cotizacion para EUR y las monedas que se sumen al catalogo (hoy solo hay proveedores de dolar contra peso) [status: pending]
