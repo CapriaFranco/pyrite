@@ -70,9 +70,17 @@ export class RatesRepository {
     }));
   }
 
-  async getLastDate(type: string): Promise<string | undefined> {
-    const result = await this.db.execute(sql`SELECT date FROM rates_daily WHERE type = ${type} ORDER BY date DESC LIMIT 1`);
-    const rows = result.rows as unknown as Array<{ date: string }>;
+  /** The last published day of a pair, which is what the daily cross-check watches (spec 030). */
+  async getLastDate(type: string, base?: string, quote?: string): Promise<string | undefined> {
+    const conditions = [eq(ratesDaily.type, type)];
+    if (base) conditions.push(eq(ratesDaily.base, base));
+    if (quote) conditions.push(eq(ratesDaily.quote, quote));
+    const rows = await this.db
+      .select({ date: ratesDaily.date })
+      .from(ratesDaily)
+      .where(and(...conditions))
+      .orderBy(sql`${ratesDaily.date} DESC`)
+      .limit(1);
     return rows[0]?.date;
   }
 
