@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 /** Humo del euro en el sync de cotizaciones (spec 030), en el estilo de smoke-027. */
 const backendDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-const PORT = 30083;
+const PORT = 30082;
 const BASE = `http://127.0.0.1:${PORT}`;
 
 let failures = 0;
