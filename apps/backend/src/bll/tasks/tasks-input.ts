@@ -1,4 +1,5 @@
-import { currencyEnum, frequencyUnitEnum, leapDayModeEnum, paymentModeEnum, recurrenceEndModeEnum, taskPriorityEnum, taskStateEnum, taskStatusEnum, taskTypeEnum, trialUnitEnum } from '../../../drizzle/schema';
+import { frequencyUnitEnum, leapDayModeEnum, paymentModeEnum, recurrenceEndModeEnum, taskPriorityEnum, taskStateEnum, taskStatusEnum, taskTypeEnum, trialUnitEnum } from '../../../drizzle/schema';
+import { isCurrencyCode } from '../../types/currencies';
 import type { Currency, TaskPaymentRow, TaskRecurrenceRow, TaskStatus, TaskType } from '../../dal/tasks/tasks.repository';
 
 /** Column enums derive from the schema, so a new value is one edit in one place. */
@@ -137,8 +138,9 @@ export function isPaymentMode(value: string): value is PaymentMode {
   return fromEnum<PaymentMode>(paymentModeEnum.enumValues, value);
 }
 
+/** A currency is a code of the system catalog (spec 026), not an enum of this domain. */
 export function isCurrency(value: string): value is Currency {
-  return fromEnum<Currency>(currencyEnum.enumValues, value);
+  return isCurrencyCode(value);
 }
 
 export function isTaskPriority(value: string): value is TaskPriority {

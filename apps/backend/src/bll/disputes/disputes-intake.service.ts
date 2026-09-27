@@ -4,6 +4,7 @@ import { TasksService } from '../tasks/tasks.service';
 import { GroupsService, SYSTEM_FINANCES_GROUP } from '../groups/groups.service';
 import { SettingsService } from '../settings/settings.service';
 import { isUuid } from '../../types/guards';
+import { isCurrencyCode, type CurrencyCode } from '../../types/currencies';
 import { dayDistance } from './dispute-scorer';
 import { matcherConfig } from './dispute-settings';
 import { linkReview, windowOf } from './dispute-matcher';
@@ -21,7 +22,7 @@ export interface TaskDraft {
     mode: 'recurrente';
     priceFixed: boolean;
     priceAmount: string | null;
-    priceCurrency: 'ARS' | 'USD';
+    priceCurrency: CurrencyCode;
   };
   categoryIds: string[];
 }
@@ -226,7 +227,8 @@ export class DisputesIntakeService {
         mode: 'recurrente',
         priceFixed: true,
         priceAmount: String(movement.amount),
-        priceCurrency: movement.amountCurrency,
+        // The currency of the movement, checked against the system catalog (spec 026).
+        priceCurrency: isCurrencyCode(movement.amountCurrency) ? movement.amountCurrency : 'ARS',
       },
       categoryIds: [movement.categoryId],
     };
@@ -266,9 +268,7 @@ export class DisputesIntakeService {
           ? String(paymentInput.priceAmount)
           : fallback.payment.priceAmount;
     const priceCurrency =
-      paymentInput.priceCurrency === 'USD' || paymentInput.priceCurrency === 'ARS'
-        ? paymentInput.priceCurrency
-        : fallback.payment.priceCurrency;
+      isCurrencyCode(paymentInput.priceCurrency) ? paymentInput.priceCurrency : fallback.payment.priceCurrency;
 
     return {
       ...fallback,

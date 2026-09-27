@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { DRIZZLE_DB, type DrizzleDb } from '../drizzle.provider';
-import { movements, categories, platforms, balances } from '../../../drizzle/schema';
+import { movements, categories, platforms, balances, currencies } from '../../../drizzle/schema';
 
 /**
  * DAL for the finances domain. Only layer that touches these tables.
@@ -72,18 +72,37 @@ export class FinancesRepository {
     return this.db.select().from(platforms).where(eq(platforms.status, 'active'));
   }
 
+  // ======== currencies ========
+
+  /** The currency catalog, in display order (spec 026). Read-only: it is system data. */
+  async findCurrencies(): Promise<Array<typeof currencies.$inferSelect>> {
+    return this.db.select().from(currencies).orderBy(currencies.position);
+  }
+
   // ======== balances ========
 
-  async getBalance(key: string): Promise<number> {
-    const rows = await this.db.select().from(balances).where(eq(balances.key, key as never)).limit(1);
+  /** Every balance row: the pivot of currency and flow. */
+  async findBalances(): Promise<Array<typeof balances.$inferSelect>> {
+    return this.db.select().from(balances);
+  }
+
+  async getBalance(currencyCode: string, walletType: string): Promise<number> {
+    const rows = await this.db
+      .select()
+      .from(balances)
+      .where(and(eq(balances.currencyCode, currencyCode), eq(balances.walletType, walletType as never)))
+      .limit(1);
     return rows.length ? Number(rows[0].amount) : 0;
   }
 
-  async setBalance(key: string, amount: number): Promise<void> {
+  async setBalance(currencyCode: string, walletType: string, amount: number): Promise<void> {
     await this.db
       .insert(balances)
-      .values({ key: key as never, amount: String(amount) })
-      .onConflictDoUpdate({ target: balances.key, set: { amount: String(amount) } });
+      .values({ currencyCode, walletType: walletType as never, amount: String(amount) })
+      .onConflictDoUpdate({
+        target: [balances.currencyCode, balances.walletType],
+        set: { amount: String(amount), updatedAt: new Date() },
+      });
   }
 
   /**
@@ -92,12 +111,12 @@ export class FinancesRepository {
    * second overwrote the first. Here the row is updated in one statement, so concurrent deltas add
    * up. A missing row starts at the delta itself.
    */
-  async incrementBalance(key: string, delta: number): Promise<void> {
+  async incrementBalance(currencyCode: string, walletType: string, delta: number): Promise<void> {
     await this.db
       .insert(balances)
-      .values({ key: key as never, amount: String(delta) })
+      .values({ currencyCode, walletType: walletType as never, amount: String(delta) })
       .onConflictDoUpdate({
-        target: balances.key,
+        target: [balances.currencyCode, balances.walletType],
         set: {
           amount: sql`${balances.amount} + ${String(delta)}::numeric`,
           updatedAt: new Date(),

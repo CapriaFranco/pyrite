@@ -40,8 +40,26 @@ export const settings = pgTable('settings', {
 
 export const movementTypeEnum = pgEnum('movement_type', ['income', 'expense']);
 export const movementStatusEnum = pgEnum('movement_status', ['active', 'deleted']);
-export const currencyEnum = pgEnum('currency', ['ARS', 'USD']);
-export const balanceKeyEnum = pgEnum('balance_key', ['cash_ars', 'digital_ars', 'cash_usd', 'digital_usd']);
+/**
+ * The flow axis of the economy (spec 026): how the money moves, physical or digital. Exactly two
+ * values, and the currency is not part of it - that lives in its own catalog below.
+ */
+export const walletTypeEnum = pgEnum('wallet_type', ['cash', 'digital']);
+
+/**
+ * Currency catalog (spec 026). Part of the system, not user data: the codes are seeded by migration
+ * and no endpoint writes here. The detail (name, symbol, decimals, order) is what the front shows;
+ * `isActive` keeps a currency out of the lists without deleting it.
+ */
+export const currencies = pgTable('currencies', {
+  code: text('code').primaryKey(),
+  name: text('name').notNull(),
+  symbol: text('symbol').notNull(),
+  decimals: integer('decimals').notNull().default(2),
+  isActive: boolean('is_active').notNull().default(true),
+  position: integer('position').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const categories = pgTable('categories', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -63,21 +81,30 @@ export const platforms = pgTable('platforms', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * One balance per (currency, flow) pair (spec 026): the pivot of the two axes, with the currency as
+ * data instead of a key baked into an enum. A new currency is a row here, not a migration.
+ */
 export const balances = pgTable('balances', {
-  key: balanceKeyEnum('key').primaryKey(),
+  currencyCode: text('currency_code').notNull().references(() => currencies.code),
+  walletType: walletTypeEnum('wallet_type').notNull(),
   amount: numeric('amount', { precision: 14, scale: 2 }).notNull().default('0'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  primaryKey({ columns: [t.currencyCode, t.walletType] }),
+]);
 
 export const movements = pgTable('movements', {
   id: uuid('id').primaryKey().defaultRandom(),
   type: movementTypeEnum('type').notNull(),
-  amountCurrency: currencyEnum('amount_currency').notNull(),
+  amountCurrency: text('amount_currency').notNull().references(() => currencies.code),
   amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
-  paidCurrency: currencyEnum('paid_currency').notNull(),
+  paidCurrency: text('paid_currency').notNull().references(() => currencies.code),
   paidAmount: numeric('paid_amount', { precision: 14, scale: 2 }).notNull(),
   rateUsed: numeric('rate_used', { precision: 14, scale: 4 }).notNull(),
-  balanceSource: balanceKeyEnum('balance_source').notNull(),
+  /** Which balance the movement moves: the currency plus the flow (spec 026). */
+  currencyCode: text('currency_code').notNull().references(() => currencies.code),
+  walletType: walletTypeEnum('wallet_type').notNull(),
   categoryId: uuid('category_id')
     .notNull()
     .references(() => categories.id),
@@ -96,11 +123,14 @@ export const movements = pgTable('movements', {
 
 export const ratesDaily = pgTable('rates_daily', {
   type: text('type').notNull(),
+  /** The pair this quotation describes (spec 027): both sides are catalog codes. */
+  base: text('base').notNull().references(() => currencies.code),
+  quote: text('quote').notNull().references(() => currencies.code),
   buy: numeric('buy', { precision: 10, scale: 2 }).notNull(),
   sell: numeric('sell', { precision: 10, scale: 2 }).notNull(),
   date: text('date').notNull(),
 }, (t) => ({
-  uniqueTypeDate: { name: 'rates_daily_type_date_key', columns: [t.type, t.date], unique: true },
+  uniqueTypePairDate: { name: 'rates_daily_type_pair_date_key', columns: [t.type, t.base, t.quote, t.date], unique: true },
 }));
 
 // ============================================================
@@ -400,7 +430,7 @@ export const taskPriceTiers = pgTable('task_price_tiers', {
   taskId: uuid('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
   position: integer('position').notNull(),
   amount: numeric('amount', { precision: 14, scale: 2 }),
-  currency: currencyEnum('currency').notNull().default('ARS'),
+  currency: text('currency').notNull().default('ARS').references(() => currencies.code),
   appliesFromOccurrence: integer('applies_from_occurrence').notNull().default(1),
 }, (t) => [
   unique('task_price_tiers_task_position_key').on(t.taskId, t.position),
@@ -417,7 +447,7 @@ export const taskPayments = pgTable('task_payments', {
   mode: paymentModeEnum('mode').notNull(),
   priceFixed: boolean('price_fixed').notNull().default(false),
   priceAmount: numeric('price_amount', { precision: 14, scale: 2 }),
-  priceCurrency: currencyEnum('price_currency').notNull().default('ARS'),
+  priceCurrency: text('price_currency').notNull().default('ARS').references(() => currencies.code),
   /** Free trial: a quantity plus its unit (`day` | `week` | `month`), zero meaning none. */
   trialCount: integer('trial_count').notNull().default(0),
   trialUnit: trialUnitEnum('trial_unit').notNull().default('day'),
@@ -434,7 +464,7 @@ export const taskExpectations = pgTable('task_expectations', {
   taskId: uuid('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
   expectedOn: date('expected_on').notNull(),
   estimatedAmount: numeric('estimated_amount', { precision: 14, scale: 2 }),
-  currency: currencyEnum('currency'),
+  currency: text('currency').references(() => currencies.code),
   tierPosition: integer('tier_position'),
   /** Time of day (`HH:MM`) and optional end of a range: metadata the detail view reads. */
   scheduledTime: text('scheduled_time'),

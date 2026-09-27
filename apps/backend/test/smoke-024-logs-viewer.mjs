@@ -62,12 +62,14 @@ const stamp = (offset) => day(offset).replace(/-/g, '');
 const entry = (level, msg, reqId) =>
   JSON.stringify({ level, time: `${day(-1)}T10:00:00.000Z`, msg, ...(reqId ? { reqId } : {}), context: 'Smoke024' });
 
-// Ayer: dentro de cualquier retencion, y fuera del archivo que el roller escribe hoy.
+// Archivos muy viejos (como en el humo 023): el roller escribe hoy en este mismo directorio, y una
+// fecha cercana se cruzaria con lo que el backend loguea mientras corre.
 const today = stamp(0);
-const yesterday = stamp(-1);
-const first = `backend.${yesterday}.1.log`;
-const second = `backend.${yesterday}.2.log`;
-const errors = `errors.${yesterday}.1.log`;
+const stale = stamp(-4000);
+const stale2 = stamp(-3999);
+const first = `backend.${stale}.1.log`;
+const second = `backend.${stale2}.1.log`;
+const errors = `errors.${stale}.1.log`;
 
 try {
   writeFileSync(
@@ -93,7 +95,6 @@ try {
 
   check(await waitForHealth(), 'el backend arranca');
   if (failures > 0) throw new Error(serverLog.slice(-800));
-
   // ---------- el listado ----------
   const listing = (await request('GET', '/logs/files')).body;
   const names = (listing?.files ?? []).map((file) => file.name);
@@ -107,8 +108,8 @@ try {
   check(seeded?.stream === 'backend' && seeded?.segment === 1, 'el stream y el segmento se separan');
   check(listing?.totals?.files >= 3 && listing?.totals?.bytes > 0, 'los totales suman');
 
-  // ---------- la lectura, acotada a ayer para que el log de la corrida no entre ----------
-  const window = `from=${day(-1)}&to=${day(-1)}`;
+  // ---------- la lectura, acotada a los archivos sembrados ----------
+  const window = `from=${day(-4000)}&to=${day(-3999)}`;
   const all = (await request('GET', `/logs/entries?${window}`)).body;
   check(all?.entries?.length === 6, 'lee los seis registros del rango', `${all?.entries?.length}`);
   check(all?.entries?.[0]?.context === 'Smoke024', 'los campos se desarman');

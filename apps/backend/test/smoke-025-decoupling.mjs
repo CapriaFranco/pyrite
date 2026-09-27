@@ -46,7 +46,8 @@ async function waitForHealth() {
   return false;
 }
 
-const KEY = 'digital_ars';
+const CURRENCY = 'ARS';
+const FLOW = 'digital';
 const today = new Date().toISOString();
 
 try {
@@ -57,12 +58,12 @@ try {
   check(Boolean(category?.id), 'la categoria de prueba se crea');
 
   const before = (await request('GET', '/finances/balances')).body;
-  check(typeof before?.[KEY] === 'number', 'los balances se leen', `${before?.[KEY]}`);
+  check(typeof before?.[CURRENCY]?.[FLOW] === 'number', 'los balances se leen', `${before?.[CURRENCY]?.[FLOW]}`);
 
   // ---------- ocho escrituras simultaneas contra el mismo saldo ----------
   const movement = (amount, description) => ({
     type: 'expense', amountCurrency: 'ARS', amount, paidCurrency: 'ARS', paidAmount: amount,
-    balanceSource: KEY, categoryId: category.id, description, date: today,
+    currencyCode: CURRENCY, walletType: FLOW, categoryId: category.id, description, date: today,
   });
   const parallel = await Promise.all(
     Array.from({ length: 8 }, (_, index) => request('POST', '/finances/movements', movement(100, `paralelo-${index}-${Date.now()}`))),
@@ -70,7 +71,7 @@ try {
   check(parallel.every((answer) => answer.status === 201), 'las ocho entradas se guardan', `${parallel.filter((a) => a.status === 201).length}/8`);
 
   const afterParallel = (await request('GET', '/finances/balances')).body;
-  const movedParallel = Number((before[KEY] - afterParallel[KEY]).toFixed(2));
+  const movedParallel = Number((before[CURRENCY][FLOW] - afterParallel[CURRENCY][FLOW]).toFixed(2));
   // Con el read-modify-write anterior varias leian el mismo saldo y una pisaba a las otras.
   check(movedParallel === 800, 'los ocho deltas se aplican, ninguno se pierde', `${movedParallel}`);
 
@@ -78,12 +79,12 @@ try {
   const first = parallel[0];
   await request('DELETE', `/finances/movements/${first.body.id}`);
   const afterDelete = (await request('GET', '/finances/balances')).body;
-  const movedDelete = Number((afterDelete[KEY] - afterParallel[KEY]).toFixed(2));
+  const movedDelete = Number((afterDelete[CURRENCY][FLOW] - afterParallel[CURRENCY][FLOW]).toFixed(2));
   check(movedDelete === 100, 'el borrado devuelve su delta', `${movedDelete}`);
 
   await request('DELETE', `/finances/movements/${first.body.id}`);
   const afterDouble = (await request('GET', '/finances/balances')).body;
-  check(afterDouble[KEY] === afterDelete[KEY], 'borrar dos veces no devuelve dos veces', `${afterDouble[KEY]}`);
+  check(afterDouble[CURRENCY][FLOW] === afterDelete[CURRENCY][FLOW], 'borrar dos veces no devuelve dos veces', `${afterDouble[CURRENCY][FLOW]}`);
 
   // ---------- el intake sigue respondiendo sobre el guardado ----------
   const service = (await request('POST', '/finances/categories', { name: `servicio-${Date.now()}`, type: 'expense', isService: true })).body;

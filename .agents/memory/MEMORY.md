@@ -11,15 +11,15 @@ Update at session close. This is not a changelog: it is the state of the work.
 -->
 
 ## State (in flight)
-- refactor/domain-decoupling: spec 025 completa y verificada (10 chequeos HTTP, saldo atomico probado contra el defecto viejo); PR pendiente de abrir.
+- feature/finances-multicurrency: specs 026 (monedas y balances pivote) y 027 (par de cotizaciones y moneda base) completas y verificadas; PR pendiente de abrir sobre la rama del desacoplamiento.
 - Mergeado en main: specs 022, 023 y 024 (PRs #30 y #31) mas el frente de disputas (019, 020, 021).
-- Verificacion del backend: `apps/backend/test/` (34 + 22 + 31 + 19 + 44 aserciones y 10 humos HTTP; README adentro).
-- Modulos puros copiables a otro proyecto (auditados en la 025): motores de recurrencia, matcher, scorer, retencion y lectura de logs, guards, types/dates, crypto, integrations.
+- Verificacion del backend: `apps/backend/test/` (34 + 22 + 31 + 19 + 44 + 14 aserciones y 12 humos HTTP; README adentro).
+- Modulos puros copiables a otro proyecto (auditados en la 025): motores de recurrencia, matcher, scorer, retencion y lectura de logs, resolucion de pares, guards, types/dates y currencies, crypto, integrations.
 
 ## Next up
-- #33 Finances multi-moneda: el diseno acordado es tabla de monedas con detalle + balances como pivote moneda x tipo de tenencia, y el par base/quote en las cotizaciones.
-- #34 Finances multi-entrada (cola FIFO u optimistic locking), #23 recordatorio de rotacion, #27 notificaciones.
-- Pendientes registrados sin implementar: ninguno mas alla de los de arriba.
+- Mergear la PR del desacoplamiento (#35) y despues la de multi-moneda, en ese orden.
+- #36 Assets and instruments (acciones, cripto, metales): el frente grande que sigue.
+- #34 Finances multi-entrada, #23 recordatorio de rotacion, #27 notificaciones.
 - UI (#24): el usuario avisa cuando arranca el front.
 
 ## Open decisions

@@ -57,13 +57,21 @@ export class FinancesController {
     return this.finances.createPlatform(body.name);
   }
 
+  /** The balance grid: currency -> flow -> amount (spec 026). */
   @Get('balances')
   getBalances() {
     return this.finances.getBalances();
   }
 
+  /** The system currency catalog, read-only. */
+  @Get('currencies')
+  listCurrencies() {
+    return this.finances.listCurrencies();
+  }
+
+  /** The manual override of one balance: currency plus flow plus the amount written by hand. */
   @Post('balances')
-  setBalance(@Body() body: { key: string; amount: number }) {
-    return this.finances.setBalance(body.key, body.amount);
+  setBalance(@Body() body: { currencyCode?: unknown; walletType?: unknown; amount?: unknown }) {
+    return this.finances.setBalance(body?.currencyCode, body?.walletType, body?.amount);
   }
 }

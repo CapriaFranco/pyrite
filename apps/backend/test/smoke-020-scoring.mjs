@@ -59,7 +59,7 @@ const category = async (name) => (await request('POST', '/finances/categories', 
 const movement = (categoryId, description, amount, date, note) =>
   request('POST', '/finances/movements', {
     type: 'expense', amountCurrency: 'USD', amount, paidCurrency: 'USD', paidAmount: amount,
-    balanceSource: 'digital_usd', categoryId, description, note: note ?? null, date,
+    currencyCode: 'USD', walletType: 'digital', categoryId, description, note: note ?? null, date,
   });
 
 /** Un pago mensual con su propia categoria, sin declarar: cada caso decide cuando declararla. */

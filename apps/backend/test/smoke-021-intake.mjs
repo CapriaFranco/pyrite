@@ -60,7 +60,7 @@ const category = async (name, isService = false) =>
 const movement = (categoryId, description, amount, dateOffset, note) =>
   request('POST', '/finances/movements', {
     type: 'expense', amountCurrency: 'USD', amount, paidCurrency: 'USD', paidAmount: amount,
-    balanceSource: 'digital_usd', categoryId, description, note: note ?? null,
+    currencyCode: 'USD', walletType: 'digital', categoryId, description, note: note ?? null,
     date: new Date(`${day(dateOffset)}T09:00:00Z`),
   });
 const paymentTask = (title, startsOn, groupId = null) =>

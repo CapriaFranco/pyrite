@@ -1,13 +1,16 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { FinancesRepository } from '../../dal/finances/finances.repository';
+import { isCurrencyCode, isWalletType, type CurrencyCode, type WalletType } from '../../types/currencies';
 
 export interface NewMovementInput {
   type: 'income' | 'expense';
-  amountCurrency: 'ARS' | 'USD';
+  amountCurrency: CurrencyCode;
   amount: number;
-  paidCurrency: 'ARS' | 'USD';
+  paidCurrency: CurrencyCode;
   paidAmount: number;
-  balanceSource: 'cash_ars' | 'digital_ars' | 'cash_usd' | 'digital_usd';
+  /** Which balance the movement moves: the currency plus the flow (spec 026). */
+  currencyCode: CurrencyCode;
+  walletType: WalletType;
   categoryId: string;
   description: string;
   note?: string | null;
@@ -15,6 +18,9 @@ export interface NewMovementInput {
   date?: Date | string;
   platformId?: string | null;
 }
+
+/** The balance grid: every active currency crossed with the two flows (spec 026). */
+export type BalanceGrid = Record<string, Record<WalletType, number>>;
 
 @Injectable()
 export class FinancesService {
@@ -29,6 +35,7 @@ export class FinancesService {
    * a look at what was just saved from the gateway, not from here: finances does not know about it.
    */
   async createMovement(input: NewMovementInput, rateUsed?: number): Promise<unknown> {
+    this.requireBalanceTarget(input.currencyCode, input.walletType);
     const rate = rateUsed ?? (input.paidAmount / input.amount);
     const movement = await this.repo.createMovement({
       type: input.type,
@@ -37,7 +44,8 @@ export class FinancesService {
       paidCurrency: input.paidCurrency,
       paidAmount: String(input.paidAmount),
       rateUsed: String(rate),
-      balanceSource: input.balanceSource,
+      currencyCode: input.currencyCode,
+      walletType: input.walletType,
       categoryId: input.categoryId,
       description: input.description,
       note: input.note ?? null,
@@ -47,7 +55,7 @@ export class FinancesService {
 
     // paidAmount is the real amount in the balance's currency.
     const delta = input.type === 'income' ? input.paidAmount : -input.paidAmount;
-    await this.repo.incrementBalance(input.balanceSource, delta);
+    await this.repo.incrementBalance(input.currencyCode, input.walletType, delta);
 
     return movement;
   }
@@ -73,7 +81,7 @@ export class FinancesService {
     // Restore the balance (opposite of what the movement did), atomically and only once.
     if (m.status !== 'deleted') {
       const delta = m.type === 'income' ? -Number(m.paidAmount) : Number(m.paidAmount);
-      await this.repo.incrementBalance(m.balanceSource, delta);
+      await this.repo.incrementBalance(m.currencyCode, m.walletType, delta);
     }
     await this.repo.softDeleteMovement(id);
   }
@@ -104,17 +112,55 @@ export class FinancesService {
     return this.repo.findPlatforms();
   }
 
-  async getBalances() {
-    const keys = ['cash_ars', 'digital_ars', 'cash_usd', 'digital_usd'] as const;
-    const result: Record<string, number> = {};
-    for (const k of keys) {
-      result[k] = await this.repo.getBalance(k);
+  /**
+   * The balance grid (spec 026): every currency of the catalog crossed with the two flows, with the
+   * stored amount or zero. Nothing here is hardcoded, so adding a currency adds a column by itself.
+   */
+  async getBalances(): Promise<BalanceGrid> {
+    const [catalog, rows] = await Promise.all([this.repo.findCurrencies(), this.repo.findBalances()]);
+    const stored = new Map(rows.map((row) => [`${row.currencyCode}:${row.walletType}`, Number(row.amount)]));
+    const grid: BalanceGrid = {};
+    for (const currency of catalog) {
+      if (!currency.isActive) continue;
+      grid[currency.code] = {
+        cash: stored.get(`${currency.code}:cash`) ?? 0,
+        digital: stored.get(`${currency.code}:digital`) ?? 0,
+      };
     }
-    return result;
+    return grid;
   }
 
-  async setBalance(key: string, amount: number) {
-    await this.repo.setBalance(key as never, amount);
+  /** The catalog as the front reads it: code, name, symbol, decimals, order. */
+  async listCurrencies() {
+    const rows = await this.repo.findCurrencies();
+    return rows.map((row) => ({
+      code: row.code,
+      name: row.name,
+      symbol: row.symbol,
+      decimals: row.decimals,
+      isActive: row.isActive,
+      position: row.position,
+    }));
+  }
+
+  /**
+   * The manual override: the user writes the number they just counted. A currency outside the
+   * system catalog or a flow that does not exist is a 400, never a row created by accident.
+   */
+  async setBalance(currencyCode: unknown, walletType: unknown, amount: unknown) {
+    if (!isCurrencyCode(currencyCode)) throw new BadRequestException('unknown currency');
+    if (!isWalletType(walletType)) throw new BadRequestException('walletType must be cash or digital');
+    const parsed = typeof amount === 'number' ? amount : Number(amount);
+    if (!Number.isFinite(parsed)) throw new BadRequestException('amount must be a number');
+    await this.repo.setBalance(currencyCode, walletType, parsed);
     return this.getBalances();
+  }
+
+  // ============ INTERNALS ============
+
+  /** A currency comes from the system catalog and the flow from the two that exist. */
+  private requireBalanceTarget(currencyCode: unknown, walletType: unknown): void {
+    if (!isCurrencyCode(currencyCode)) throw new BadRequestException('unknown currency');
+    if (!isWalletType(walletType)) throw new BadRequestException('walletType must be cash or digital');
   }
 }

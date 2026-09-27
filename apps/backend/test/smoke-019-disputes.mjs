@@ -63,7 +63,7 @@ const declare = (taskId, categoryId) => request('PUT', `/tasks/${taskId}/categor
 const movements = async (categoryId, description, paidAmount, date, amount = paidAmount) =>
   request('POST', '/finances/movements', {
     type: 'expense', amountCurrency: 'USD', amount, paidCurrency: 'USD', paidAmount,
-    balanceSource: 'digital_usd', categoryId, description, date,
+    currencyCode: 'USD', walletType: 'digital', categoryId, description, date,
   });
 const expectationsOf = async (taskId) => (await request('GET', `/tasks/${taskId}/expectations`)).body ?? [];
 const disputesOf = async (query = '') => (await request('GET', `/disputes${query}`)).body ?? [];
