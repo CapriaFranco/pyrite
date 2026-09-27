@@ -1,6 +1,11 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { CountsService } from '../../bll/counts/counts.service';
 import { CountsAuditsService, type CountsDuplicateGroup } from '../../bll/counts/counts-audits.service';
+import {
+  CountsRemindersService,
+  type CredentialReminder,
+  type StaleDaysSetting,
+} from '../../bll/counts/counts-reminders.service';
 import { type CountsAccountView } from '../../bll/counts/counts-view';
 import { isCredentialType, type CountsAccountInput } from '../../bll/counts/counts-input';
 import { isUuid } from '../../types/guards';
@@ -17,6 +22,7 @@ export class CountsController {
   constructor(
     private readonly counts: CountsService,
     private readonly audits: CountsAuditsService,
+    private readonly reminders: CountsRemindersService,
   ) {}
 
   // ============ AUDITS ============
@@ -29,6 +35,25 @@ export class CountsController {
   @Get('audit/duplicates')
   duplicatesAudit(): Promise<CountsDuplicateGroup[]> {
     return this.audits.duplicatesAudit();
+  }
+
+  // ============ REMINDERS (spec 028) ============
+
+  /** The vault never has to be unlocked to answer this: it reads metadata only. */
+  @Get('stale')
+  stale(): Promise<CredentialReminder> {
+    return this.reminders.reminder();
+  }
+
+  @Get('stale/settings')
+  staleSettings(): StaleDaysSetting {
+    return this.reminders.settingsView();
+  }
+
+  /** `staleDays: 0` turns the reminder off; anything out of range is a 400. */
+  @Put('stale/settings')
+  updateStaleSettings(@Body() body: { staleDays?: unknown } | undefined): Promise<StaleDaysSetting> {
+    return this.reminders.updateSettings(body);
   }
 
   // ============ GROUPS (domain 'counts') ============
