@@ -44,23 +44,50 @@ evidence.
 - `dbd9c43` feat(backend): el euro en el sync de cotizaciones (spec 030).
 - `a181a30` test(backend): aserciones de las fuentes y humo del euro (spec 030).
 
-## Pending (the run that executes them fills this in)
+## Verification run (measured)
 
-- **HTTP smoke** `smoke-030-rates-eur.mjs` (port 30083, 21 checks): deliberately not run while
-  building. Every smoke's boot runs the real reconcile against the providers and writes to the
-  shared `pyrite_test`, and the assertions compare the API's own answers among themselves (the
-  direct conversion against the newest point of the series, the cross against the euro's mid over
-  the dollar's), so a market move never fails them and a missing euro row always does. No fixed
-  provider value is asserted and nothing is seeded: a seeded day the provider does not publish
-  would leave a quotation that never existed, and on the same key the upsert would ignore it.
-- **`smoke-027-rates-pair.mjs`**: its "no path" check moved from `EUR -> USD` to
-  `EUR -> USD&type=blue`, because that path exists now. Re-run pending.
-- **Counts by pair in `rates_daily`** (psql on `pyrite_test`, and on `pyrite` when the change lands
-  there): rows per `(type, base, quote)` before and after, the euro's whole-range count (measured at
-  the source while writing the spec: 628 days since 2025-01-01, 1,065 in its whole range) and the
-  count per dollar type, as the proof that the dollar is untouched and that a second run adds
-  nothing.
-- **Regressions**: the other six assertion suites (34 + 22 + 31 + 19 + 44 + 14) and the twelve
-  smokes, in series.
-- `apps/backend/test/README.md` gains the new smoke and the updated counts (integrated by the
-  orchestrator, not in this branch).
+The run that executes the checks already happened, in series over the shared test database
+(`pyrite_test`). Everything below was measured there; nothing is estimated.
+
+### HTTP smoke `apps/backend/test/smoke-030-rates-eur.mjs`
+
+21 checks, 0 failures. It verified:
+
+- the euro series answers: 628 points since 2025-01-01;
+- every point carries the EUR/ARS pair with the name the source gives it and with its two positive
+  sides (1725.78/1739.83);
+- EUR against ARS resolves directly, with rate 1732.805, the mid of the two sides of the newest
+  point;
+- the oficial dollar is still there: 635 points;
+- EUR against USD is built through the base currency (cross, rate 1.140003);
+- the same conversion without a type no longer answers 404 but 200, which used to be the case with
+  no path;
+- a type without a euro quotation answers 404 without inventing a rate;
+- the series without a pair of a type with two quotations is still the dollar against the peso;
+- the manual sync answered 5073 rows without adding any euro row (628 -> 628) nor any dollar row
+  (635 -> 635), which is the idempotence.
+
+### Port
+
+The smoke ran on port 30082, not on 30083: 30083 is the one smoke 029 uses and both smokes collided
+on the same port. The orchestrator found the collision while validating and the fix is in this branch
+as commit `3109dc5` `test(backend): puerto propio para el humo del euro`. The two smokes then ran in
+parallel, both green (39 and 21 checks), so the coexistence is proven and not assumed.
+
+### Regressions
+
+- `smoke-027-rates-pair.mjs` was run again (its "no path" check moved to `EUR -> USD` with
+  `type=blue`): 22 checks, 0 failures, fully green.
+- The six previous assertion suites (34 + 22 + 31 + 19 + 44 + 14): all green, exit 0.
+- The new assertions of this spec (`rates-sources-asserts.mjs`, 28): green.
+- Smoke non-regression: 018-payments, 021-intake and 026-currencies, green in series.
+
+### Counting
+
+The proof that the dollar is untouched and that a second run adds nothing is the smoke's own counts
+above: the euro series length and the dollar series length before and after the manual sync, plus its
+5073 written rows. No separate count by pair was taken with psql against `rates_daily` in this run,
+so the euro's whole-range count measured at the source while writing the spec stays a source figure.
+
+`apps/backend/test/README.md` gains the new smoke and the updated counts, integrated by the
+orchestrator and not in this branch.
