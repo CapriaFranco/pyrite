@@ -79,8 +79,9 @@ try {
   const samePair = (await request('GET', '/rates/convert?from=ARS&to=ARS')).body;
   check(samePair?.rate === 1, 'la misma moneda es uno', `${samePair?.rate}`);
 
-  const noPath = await request('GET', '/rates/convert?from=EUR&to=USD');
-  check(noPath.status === 404, 'sin camino responde 404 y no inventa un rate', `${noPath.status}`);
+  // El euro ya tiene su cotizacion (spec 030): el caso sin camino pasa a ser un tipo que no la tiene.
+  const noPath = await request('GET', '/rates/convert?from=EUR&to=USD&type=blue');
+  check(noPath.status === 404, 'un tipo sin cotizacion de ese par responde 404 y no inventa un rate', `${noPath.status}`);
   const badCurrency = await request('GET', '/rates/convert?from=BTC&to=ARS');
   check(badCurrency.status === 400, 'una moneda fuera del catalogo da 400', `${badCurrency.status}`);
   const badType = await request('GET', '/rates/convert?from=USD&to=ARS&type=noexiste');

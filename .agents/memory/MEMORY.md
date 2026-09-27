@@ -11,15 +11,16 @@ Update at session close. This is not a changelog: it is the state of the work.
 -->
 
 ## State (in flight)
-- feature/finances-multicurrency: specs 026 (monedas y balances pivote) y 027 (par de cotizaciones y moneda base) completas y verificadas; PR pendiente de abrir sobre la rama del desacoplamiento.
-- Mergeado en main: specs 022, 023 y 024 (PRs #30 y #31) mas el frente de disputas (019, 020, 021).
-- Verificacion del backend: `apps/backend/test/` (34 + 22 + 31 + 19 + 44 + 14 aserciones y 12 humos HTTP; README adentro).
-- Modulos puros copiables a otro proyecto (auditados en la 025): motores de recurrencia, matcher, scorer, retencion y lectura de logs, resolucion de pares, guards, types/dates y currencies, crypto, integrations.
+- specs 028 (recordatorio de rotacion), 029 (multi-entrada en finances) y 030 (fuente del euro): implementadas y verificadas, listas para PR.
+- Mergeado en main: specs 022 a 027 (PRs #30, #31 y #37) y el registro de los assets futuros (PR #38).
+- Verificacion del backend: `apps/backend/test/` (34 + 22 + 31 + 19 + 44 + 14 + 34 + 28 aserciones y 15 humos HTTP; README adentro).
+- Modulos puros copiables a otro proyecto (auditados en la 025): motores de recurrencia, matcher, scorer, retencion y lectura de logs, resolucion de pares, edad de credenciales, validacion de movimientos, fuentes de cotizacion, guards, types/dates y currencies, crypto, integrations.
 
 ## Next up
-- Mergear la PR del desacoplamiento (#35) y despues la de multi-moneda, en ese orden.
+- Abrir los PRs de 028, 029 y 030 (ramas listas y validadas juntas).
 - #36 Assets and instruments (acciones, cripto, metales): el frente grande que sigue.
-- #34 Finances multi-entrada, #23 recordatorio de rotacion, #27 notificaciones.
+- #27 Notificaciones: el aviso con unidad y cantidad que quedo fuera de la 028.
+- Reconcile de tasas: hoy escribe ~4.400 filas una por una en el boot (decenas de segundos).
 - UI (#24): el usuario avisa cuando arranca el front.
 
 ## Open decisions

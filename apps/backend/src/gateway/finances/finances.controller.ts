@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { FinancesService, type NewMovementInput } from '../../bll/finances/finances.service';
+import { FinancesService } from '../../bll/finances/finances.service';
+import type { MovementInput } from '../../bll/finances/movement-input';
 import { DisputesIntakeService } from '../../bll/disputes/disputes-intake.service';
 
 @Controller('finances')
@@ -20,10 +21,28 @@ export class FinancesController {
    * the engine's answer is an extra on the response, never a condition to save.
    */
   @Post('movements')
-  async createMovement(@Body() body: NewMovementInput & { rateUsed?: number }) {
-    const movement = (await this.finances.createMovement(body, body.rateUsed)) as { id: string };
+  async createMovement(@Body() body: MovementInput) {
+    const movement = (await this.finances.createMovement(body, body?.rateUsed)) as { id: string };
     const intake = await this.intake.intakeForSaved(movement.id);
     return intake ? { ...movement, intake } : movement;
+  }
+
+  /**
+   * A session of movements as one operation (spec 029): finances writes the whole list as one unit
+   * and the gateway then asks the engine about each saved movement, in the order they were sent.
+   * The intake runs after the commit, one call per movement, and each answer travels with its item;
+   * a failure is already swallowed by `intakeForSaved`, so it can neither undo the batch nor cost
+   * the answer of another item.
+   */
+  @Post('movements/batch')
+  async createMovementBatch(@Body() body: { movements?: unknown }) {
+    const saved = await this.finances.createMovementBatch(body?.movements);
+    const items = [];
+    for (const [index, movement] of saved.entries()) {
+      const intake = await this.intake.intakeForSaved(movement.id);
+      items.push(intake ? { index, movement, intake } : { index, movement });
+    }
+    return { saved: items.length, items };
   }
 
   @Delete('movements/:id')

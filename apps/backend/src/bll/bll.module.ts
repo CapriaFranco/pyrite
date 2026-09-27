@@ -8,6 +8,7 @@ import { GroupsService } from './groups/groups.service';
 import { NotesService } from './notes/notes.service';
 import { CountsService } from './counts/counts.service';
 import { CountsAuditsService } from './counts/counts-audits.service';
+import { CountsRemindersService } from './counts/counts-reminders.service';
 import { TasksService } from './tasks/tasks.service';
 import { CalendarService } from './calendar/calendar.service';
 import { LogsService } from './logs/logs.service';
@@ -27,7 +28,7 @@ import { SectionWriteGuard } from './rotation/section-write-guard';
 @Global()
 @Module({
   imports: [DalModule],
-  providers: [SettingsService, FinancesService, RatesService, ApiKeysService, GroupsService, NotesService, CountsService, CountsAuditsService, TasksService, CalendarService, DisputePassService, DisputesService, DisputesIntakeService, DisputeResolutionsService, DisputeEngineSettingsService, LogsService, LogViewerService, RotationService, SectionWriteGuard],
-  exports: [SettingsService, FinancesService, RatesService, ApiKeysService, GroupsService, NotesService, CountsService, CountsAuditsService, TasksService, CalendarService, DisputePassService, DisputesService, DisputesIntakeService, DisputeResolutionsService, DisputeEngineSettingsService, LogsService, LogViewerService, RotationService, SectionWriteGuard],
+  providers: [SettingsService, FinancesService, RatesService, ApiKeysService, GroupsService, NotesService, CountsService, CountsAuditsService, CountsRemindersService, TasksService, CalendarService, DisputePassService, DisputesService, DisputesIntakeService, DisputeResolutionsService, DisputeEngineSettingsService, LogsService, LogViewerService, RotationService, SectionWriteGuard],
+  exports: [SettingsService, FinancesService, RatesService, ApiKeysService, GroupsService, NotesService, CountsService, CountsAuditsService, CountsRemindersService, TasksService, CalendarService, DisputePassService, DisputesService, DisputesIntakeService, DisputeResolutionsService, DisputeEngineSettingsService, LogsService, LogViewerService, RotationService, SectionWriteGuard],
 })
 export class BllModule {}
