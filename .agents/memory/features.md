@@ -28,4 +28,3 @@ Format: #<id> <name> - <one-line summary> [spec: <file>] [status: pending|active
 #27 Notificaciones y recordatorios - switch de aviso con unidad (segundos/minutos/horas/dias) y cantidad, mas la variante de hora previa al inicio; requiere el sistema de notificaciones [status: pending]
 #34 Finances multi-entrada - registrar varios movimientos en una operacion (cola FIFO u optimistic locking con version) [status: pending]
 #36 Assets and instruments - acciones, criptomonedas y metales (oro como bien economico): tenencias con cantidad, valuacion y tracker/telemetria de precio, con su propia mecanica y no como saldo nominal [status: pending]
-#37 Rates pair and base currency - las cotizaciones llevan su par base/quote y la moneda base del sistema pasa a ser un setting (segunda mitad del frente multi-moneda, spec 027) [status: pending]

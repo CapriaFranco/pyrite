@@ -123,11 +123,14 @@ export const movements = pgTable('movements', {
 
 export const ratesDaily = pgTable('rates_daily', {
   type: text('type').notNull(),
+  /** The pair this quotation describes (spec 027): both sides are catalog codes. */
+  base: text('base').notNull().references(() => currencies.code),
+  quote: text('quote').notNull().references(() => currencies.code),
   buy: numeric('buy', { precision: 10, scale: 2 }).notNull(),
   sell: numeric('sell', { precision: 10, scale: 2 }).notNull(),
   date: text('date').notNull(),
 }, (t) => ({
-  uniqueTypeDate: { name: 'rates_daily_type_date_key', columns: [t.type, t.date], unique: true },
+  uniqueTypePairDate: { name: 'rates_daily_type_pair_date_key', columns: [t.type, t.base, t.quote, t.date], unique: true },
 }));
 
 // ============================================================

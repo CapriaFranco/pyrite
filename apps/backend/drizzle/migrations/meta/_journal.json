@@ -120,6 +120,13 @@
       "when": 1790362090882,
       "tag": "0016_currencies_balance_pivot",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790383587609,
+      "tag": "0017_rates_pair",
+      "breakpoints": true
     }
   ]
 }
