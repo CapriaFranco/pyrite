@@ -5,23 +5,20 @@ import { RatesRepository } from '../../dal/rates/rates.repository';
 import { SettingsService } from '../settings/settings.service';
 import { isCurrencyCode, type CurrencyCode } from '../../types/currencies';
 import { resolveRate, type RateResolution } from './rate-pair';
+import {
+  mapCurrencyRows,
+  mapDollarRows,
+  PROVIDER_PAIR,
+  staleFeedWarning,
+  WATCHED_FEEDS,
+  type RateEntry,
+} from './rates-sources';
 
-export interface RateEntry {
-  type: string;
-  /** The pair of the quotation (spec 027): both sides are codes of the currency catalog. */
-  base: string;
-  quote: string;
-  buy: number;
-  sell: number;
-  date: string;
-}
+export type { RateEntry };
 
 /** The currency equivalences are expressed in, as a setting (spec 027). */
 export const BASE_CURRENCY_KEY = 'finances.base_currency';
 const DEFAULT_BASE_CURRENCY: CurrencyCode = 'ARS';
-
-/** Everything the providers give is the dollar against the peso. */
-const PROVIDER_PAIR = { base: 'USD', quote: 'ARS' };
 
 @Injectable()
 export class RatesService {
@@ -36,22 +33,51 @@ export class RatesService {
     private readonly settings: SettingsService,
   ) {}
 
+  /**
+   * The full reconcile (spec 030) runs one leg per source: the dollar's eight houses and the
+   * declared currencies of the currency endpoint. The legs are independent on purpose: a euro
+   * failure is logged with its source and stops neither the dollar nor the boot, while a dollar
+   * failure is kept and rethrown after both legs ran, so it surfaces exactly as it did before and
+   * the euro still gets its chance.
+   */
   async reconcileFull(): Promise<number> {
     const fromDate = process.env.RATES_SYNC_FROM ?? '2025-01-01';
-    const rows = await this.argData.fetchFullSeries();
-    const entries = rows
-      .filter((r) => r.casa && r.venta != null && r.compra != null && r.fecha >= fromDate)
-      .map((r) => ({ type: r.casa, ...PROVIDER_PAIR, buy: r.compra, sell: r.venta, date: r.fecha }));
-    await this.ratesRepo.upsertMany(entries);
+    let count = 0;
+    let dollarError: unknown;
+
+    try {
+      const dollars = mapDollarRows(await this.argData.fetchFullSeries(), fromDate);
+      await this.ratesRepo.upsertMany(dollars);
+      count += dollars.length;
+      this.log.log(`Reconcile dolares: ${dollars.length} entries (from ${fromDate})`);
+    } catch (error: unknown) {
+      dollarError = error;
+    }
+
+    try {
+      const currencies = mapCurrencyRows(await this.argData.fetchCurrencies(), fromDate);
+      await this.ratesRepo.upsertMany(currencies);
+      count += currencies.length;
+      this.log.log(`Reconcile monedas: ${currencies.length} entries (from ${fromDate})`);
+    } catch (error: unknown) {
+      this.log.warn(`Reconcile monedas failed: ${message(error)}`);
+    }
+
+    if (dollarError) throw dollarError;
     this.lastReconcileAt = Date.now();
-    this.log.log(`Reconcile complete: ${entries.length} entries (from ${fromDate})`);
-    return entries.length;
+    this.log.log(`Reconcile complete: ${count} entries (from ${fromDate})`);
+    return count;
   }
 
   async refreshIntradia(): Promise<void> {
     this.intradiaRates = await this.dolarApi.fetchAll();
   }
 
+  /**
+   * The newest point of a type. Without a pair filter it answers the pair the providers quote
+   * against the peso (spec 030): a type can now hold two quotations (`oficial` is the dollar's and
+   * the euro's), and this read must not become a coin toss between them.
+   */
   async getLatest(type: string, base?: string, quote?: string): Promise<RateEntry | undefined> {
     if (this.intradiaRates && !base && !quote) {
       const intradia = this.intradiaRates.find((r) => r.casa === type);
@@ -65,12 +91,18 @@ export class RatesService {
         };
       }
     }
-    const row = await this.ratesRepo.getLatest(type, base, quote);
+    const row = await this.ratesRepo.getLatest(type, base ?? PROVIDER_PAIR.base, quote ?? PROVIDER_PAIR.quote);
     return row ? { ...row, type } : undefined;
   }
 
   async getSeries(type: string, from?: string, to?: string, base?: string, quote?: string): Promise<RateEntry[]> {
-    const rows = await this.ratesRepo.getSeries(type, from, to, base, quote);
+    const rows = await this.ratesRepo.getSeries(
+      type,
+      from,
+      to,
+      base ?? PROVIDER_PAIR.base,
+      quote ?? PROVIDER_PAIR.quote,
+    );
     return rows.map((r) => ({ ...r, type }));
   }
 
@@ -123,14 +155,17 @@ export class RatesService {
     return { baseCurrency: value };
   }
 
+  /**
+   * The daily cross-check (spec 030) watches every feed worth watching and warns per feed, with its
+   * name and its last date: a source that goes silent has to be visible by itself instead of hiding
+   * behind the other one.
+   */
   async dailyCrossCheck(): Promise<void> {
-    const lastBlue = await this.ratesRepo.getLastDate('blue');
-    if (!lastBlue) {
-      this.log.warn('Daily check: no blue data at all');
-      return;
+    for (const feed of WATCHED_FEEDS) {
+      const lastDate = await this.ratesRepo.getLastDate(feed.type, feed.base, feed.quote);
+      const warning = staleFeedWarning(feed, lastDate);
+      if (warning) this.log.warn(warning);
     }
-    const daysBehind = (Date.now() - new Date(lastBlue).getTime()) / 86_400_000;
-    if (daysBehind > 2) this.log.warn(`Daily check: blue ${Math.floor(daysBehind)} days behind (last=${lastBlue})`);
   }
 
   /**
@@ -148,4 +183,8 @@ export class RatesService {
       await this.dailyCrossCheck();
     }
   }
+}
+
+function message(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
