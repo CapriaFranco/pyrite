@@ -34,6 +34,7 @@ node apps/backend/test/smoke-027-rates-pair.mjs           # par de las cotizacio
 node apps/backend/test/smoke-028-credential-reminder.mjs  # recordatorio de rotacion: metadatos, umbral y apagado
 node apps/backend/test/smoke-029-multi-entry.mjs          # lote de movimientos y validacion compartida
 node apps/backend/test/smoke-030-rates-eur.mjs            # euro en el sync y cruce por la moneda base
+node apps/backend/test/smoke-031-first-run.mjs            # primer ingreso: el flag 0/1 que lo declara
 ```
 
 Cada humo usa su propio puerto (30080 a 30099) y sale con codigo 0 solo si todo pasa. Dos humos
@@ -53,10 +54,10 @@ pueden correr a la vez sin chocarse: la convivencia de 029 y 030 en paralelo est
   la vez anterior.
 - Los numeros de cobertura quedan en `docs/records/`: 34 aserciones del motor de recurrencia, 22
   del matcher de disputas, 31 del scorer, 19 de la retencion de logs, 44 del lector de logs, 14 de
-  la resolucion de pares, 34 de la edad de credenciales, 28 de las fuentes de cotizacion, y 358
-  chequeos HTTP repartidos en los quince humos (calendario 18, organizacion 17, fechas 15, pagos 11,
+  la resolucion de pares, 34 de la edad de credenciales, 28 de las fuentes de cotizacion, y 366
+  chequeos HTTP repartidos en los dieciseis humos (calendario 18, organizacion 17, fechas 15, pagos 11,
   disputas 38, scoring 25, intake 30, logs 23, visor 39, desacoplamiento 10, monedas 12, pares 22,
-  recordatorio 38, lote 39, euro 21).
+  recordatorio 38, lote 39, euro 21, primer ingreso 8).
 - Los numeros de cada script se cuentan con `node temp/count-pass.mjs` (scratch) o mirando el
   listado de PASS que imprime cada corrida.
 - CI todavia no los corre: haria falta un servicio de Postgres en el workflow. Queda anotado
