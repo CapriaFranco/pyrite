@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { HealthController } from './health/health.controller';
+import { SetupController } from './setup/setup.controller';
 import { SettingsController } from './settings/settings.controller';
 import { FinancesController } from './finances/finances.controller';
 import { RatesController } from './rates/rates.controller';
@@ -16,6 +17,6 @@ import { BllModule } from '../bll/bll.module';
 
 @Module({
   imports: [ServicesModule, BllModule, AuthModule],
-  controllers: [HealthController, SettingsController, FinancesController, RatesController, ApiKeysController, NotesController, CountsController, TasksController, CalendarController, DisputesController, LogsController],
+  controllers: [HealthController, SettingsController, FinancesController, RatesController, ApiKeysController, NotesController, CountsController, TasksController, CalendarController, DisputesController, LogsController, SetupController],
 })
 export class GatewayModule {}
