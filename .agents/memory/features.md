@@ -1,6 +1,6 @@
 # Features - SDD index | delete when complete | new ID = last_id + 1
 
-last_id: 42
+last_id: 43
 
 <!--
 One line per feature. Planned features may be registered here without a spec yet (status: pending); a spec is opened when the feature is planned and ready to develop. When a feature is COMPLETE: remove its line here and mark the spec status as completed. SPECS ARE NEVER DELETED - specs/ is a permanent registry, the numbering exists for that. Never reuse an ID; last_id only grows.
@@ -33,3 +33,4 @@ Format: #<id> <name> - <one-line summary> [spec: <file>] [status: pending|active
 #40 Crypto - criptomonedas: unidad y red, cantidad y precio de mercado; la red define decimales y direcciones [status: pending]
 #41 Price feeds - proveedores de precios por tipo de instrumento (metales, acciones, cripto) con sync programado y serie historica, mismo patron que rates: el core los consume por HTTP desde integrations/, nunca importa su codigo [status: pending]
 #42 Rates sources expansion - fuentes de cotizacion para EUR y las monedas que se sumen al catalogo (hoy solo hay proveedores de dolar contra peso); el euro entra desde ArgentinaDatos y BRL, CLP y UYU viajan en el mismo payload [spec: 030-rates-eur-source.md] [status: active]
+#43 First run status - un flag 0/1 en settings que dice si la app ya se configuro, para que el onboarding sepa si tiene que aparecer [spec: 031-first-run-status.md] [status: active]
