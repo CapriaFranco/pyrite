@@ -20,6 +20,7 @@ import { DisputeResolutionsService } from './disputes/dispute-resolutions.servic
 import { DisputeEngineSettingsService } from './disputes/dispute-engine-settings.service';
 import { RotationService } from './rotation/rotation.service';
 import { SectionWriteGuard } from './rotation/section-write-guard';
+import { SetupService } from './setup/setup.service';
 
 /**
  * Domain logic layer. Feature BLL modules are registered here as they are
@@ -28,7 +29,7 @@ import { SectionWriteGuard } from './rotation/section-write-guard';
 @Global()
 @Module({
   imports: [DalModule],
-  providers: [SettingsService, FinancesService, RatesService, ApiKeysService, GroupsService, NotesService, CountsService, CountsAuditsService, CountsRemindersService, TasksService, CalendarService, DisputePassService, DisputesService, DisputesIntakeService, DisputeResolutionsService, DisputeEngineSettingsService, LogsService, LogViewerService, RotationService, SectionWriteGuard],
-  exports: [SettingsService, FinancesService, RatesService, ApiKeysService, GroupsService, NotesService, CountsService, CountsAuditsService, CountsRemindersService, TasksService, CalendarService, DisputePassService, DisputesService, DisputesIntakeService, DisputeResolutionsService, DisputeEngineSettingsService, LogsService, LogViewerService, RotationService, SectionWriteGuard],
+  providers: [SettingsService, FinancesService, RatesService, ApiKeysService, GroupsService, NotesService, CountsService, CountsAuditsService, CountsRemindersService, TasksService, CalendarService, DisputePassService, DisputesService, DisputesIntakeService, DisputeResolutionsService, DisputeEngineSettingsService, LogsService, LogViewerService, RotationService, SectionWriteGuard, SetupService],
+  exports: [SettingsService, FinancesService, RatesService, ApiKeysService, GroupsService, NotesService, CountsService, CountsAuditsService, CountsRemindersService, TasksService, CalendarService, DisputePassService, DisputesService, DisputesIntakeService, DisputeResolutionsService, DisputeEngineSettingsService, LogsService, LogViewerService, RotationService, SectionWriteGuard, SetupService],
 })
 export class BllModule {}
