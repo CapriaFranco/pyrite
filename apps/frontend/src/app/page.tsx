@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppNavigation } from "@/components/organisms/app-navigation";
 import { api, type HealthReport } from "@/lib/api/client";
 
 type Status = "loading" | "up" | "down";
@@ -31,7 +32,9 @@ export default function StatusView() {
   }, []);
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4">
+    <div className="app-shell">
+      <AppNavigation />
+      <main className="dashboard-main">
       <h1 className="text-2xl font-semibold">Pyrite</h1>
       <p style={{ color: "var(--color-muted)" }}>
         Estado del sistema: {status === "loading" ? "consultando" : status === "up" ? "operativo" : "con fallas"}
@@ -43,6 +46,7 @@ export default function StatusView() {
           </li>
         ))}
       </ul>
-    </main>
+      </main>
+    </div>
   );
 }
