@@ -2,25 +2,42 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import {
+  ChartNoAxesCombined,
+  CircleDollarSign,
+  FileText,
+  FolderKanban,
+  Home,
+  KeyRound,
+  MoreHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings2,
+  Swords,
+  UsersRound,
+  type LucideIcon,
+} from "lucide-react";
 
-const PRIMARY_ITEMS = [
-  { label: "Inicio", href: "/", glyph: "⌂" },
-  { label: "Tareas", href: "/tasks", glyph: "□" },
-  { label: "Notas", href: "/notes", glyph: "▤" },
-  { label: "Finanzas", href: "/finances", glyph: "◫" },
-] as const;
+type NavigationItem = { label: string; href: string; icon: LucideIcon };
 
-const SECONDARY_ITEMS = [
-  { label: "Conflictos", href: "/conflicts", glyph: "◇" },
-  { label: "Cuentas", href: "/accounts", glyph: "◌" },
-  { label: "APIs", href: "/apis", glyph: "⌘" },
-  { label: "Configuración", href: "/settings", glyph: "⚙" },
-] as const;
+const PRIMARY_ITEMS: NavigationItem[] = [
+  { label: "Inicio", href: "/", icon: Home },
+  { label: "Tareas", href: "/tasks", icon: FolderKanban },
+  { label: "Notas", href: "/notes", icon: FileText },
+  { label: "Finanzas", href: "/finances", icon: CircleDollarSign },
+];
 
-function NavItem({ label, href, glyph, compact = false }: { label: string; href: string; glyph: string; compact?: boolean }) {
+const SECONDARY_ITEMS: NavigationItem[] = [
+  { label: "Conflictos", href: "/conflicts", icon: Swords },
+  { label: "Cuentas", href: "/accounts", icon: UsersRound },
+  { label: "APIs", href: "/apis", icon: KeyRound },
+  { label: "Configuración", href: "/settings", icon: Settings2 },
+];
+
+function NavItem({ label, href, icon: Icon, compact = false }: NavigationItem & { compact?: boolean }) {
   return (
     <Link className={`nav-item${compact ? " nav-item-compact" : ""}`} href={href} aria-current={href === "/" ? "page" : undefined}>
-      <span className="nav-glyph" aria-hidden="true">{glyph}</span>
+      <Icon className="nav-glyph" aria-hidden="true" strokeWidth={1.8} />
       <span className="nav-label">{label}</span>
     </Link>
   );
@@ -46,7 +63,8 @@ export function AppNavigation() {
           {SECONDARY_ITEMS.map((item) => <NavItem key={item.href} {...item} />)}
         </nav>
         <button className="nav-collapse" type="button" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? "Expandir navegación" : "Plegar navegación"} aria-expanded={!collapsed}>
-          <span aria-hidden="true">{collapsed ? "→" : "←"}</span><span className="nav-label">{collapsed ? "Expandir" : "Plegar menú"}</span>
+          {collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
+          <span className="nav-label">{collapsed ? "Expandir" : "Plegar menú"}</span>
         </button>
       </aside>
 
